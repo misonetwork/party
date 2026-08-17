@@ -8,7 +8,7 @@
 // blob id (what `walrus store-quilt` prints) and converts it to the on-chain
 // u256; the read helpers build aggregator URLs per identifier.
 
-import { b64UrlToU256 } from "@unconfirmed/ori";
+import { b64UrlToU256 } from "../internal.ts";
 import * as mediaMod from "../contracts/party_media/party_media.ts";
 import type { TxThunk } from "../transactions.ts";
 import type { Media } from "../types.ts";

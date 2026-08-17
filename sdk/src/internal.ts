@@ -4,8 +4,29 @@
 // The single boundary between generated BCS-parse output (snake_case, Move-shaped)
 // and the public camelCase types.
 
-import { u256ToB64Url } from "@unconfirmed/ori";
+import { bcs } from "@mysten/sui/bcs";
+import { fromBase64, toBase64 } from "@mysten/sui/utils";
 import type { Cta, Media, Party, Profile } from "./types.ts";
+
+const u256 = bcs.u256();
+
+function toBase64Url(bytes: Uint8Array): string {
+  return toBase64(bytes).replace(/=*$/, "").replaceAll("+", "-").replaceAll("/", "_");
+}
+
+function fromBase64Url(value: string): Uint8Array {
+  let base64 = value.replaceAll("-", "+").replaceAll("_", "/");
+  while (base64.length % 4) base64 += "=";
+  return fromBase64(base64);
+}
+
+export function u256ToB64Url(value: bigint | string): string {
+  return toBase64Url(u256.serialize(BigInt(value)).toBytes());
+}
+
+export function b64UrlToU256(value: string): string {
+  return u256.parse(fromBase64Url(value)).toString();
+}
 
 /** `CountryCode` / `LanguageCode` are single-field tuple structs → parse to a 1-element array. */
 function unwrapCode(v: unknown): string | undefined {
