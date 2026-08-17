@@ -131,6 +131,11 @@ export class PartyClient {
   async getPartyById(partyId: string): Promise<Party> {
     return queries.getPartyById(this.#client, partyId);
   }
+  async getPartiesByIds(
+    partyIds: readonly string[],
+  ): Promise<Partial<Record<string, Party>>> {
+    return queries.getPartiesByIds(this.#client, partyIds);
+  }
   derivePartyAdminCapId(partyId: string): string {
     return queries.derivePartyAdminCapId(partyId, this.#pkg);
   }

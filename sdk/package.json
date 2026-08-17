@@ -3,35 +3,107 @@
   "version": "0.1.0",
   "description": "Typed query helpers and transaction builders for Miso PartyOS and its extensions on Sui.",
   "license": "Apache-2.0",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/misonetwork/party.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://github.com/misonetwork/party/tree/main/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/misonetwork/party/issues"
+  },
+  "keywords": [
+    "sui",
+    "move",
+    "miso",
+    "music",
+    "identity",
+    "sdk"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "sideEffects": false,
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "codegen": "sui-ts-codegen generate"
+    "codegen": "sui-ts-codegen generate",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./src/client.ts",
-    "./queries": "./src/queries.ts",
-    "./transactions": "./src/transactions.ts",
-    "./execute": "./src/execute.ts",
-    "./view": "./src/view.ts",
-    "./types": "./src/types.ts",
-    "./extensions/profile": "./src/extensions/profile.ts",
-    "./extensions/media": "./src/extensions/media.ts",
-    "./extensions/roles": "./src/extensions/roles.ts",
-    "./extensions/tags": "./src/extensions/tags.ts",
-    "./extensions/genres": "./src/extensions/genres.ts",
-    "./extensions/ctas": "./src/extensions/ctas.ts",
-    "./extensions/links": "./src/extensions/links.ts",
-    "./extensions/featured": "./src/extensions/featured.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./queries": {
+      "types": "./dist/queries.d.ts",
+      "default": "./dist/queries.js"
+    },
+    "./transactions": {
+      "types": "./dist/transactions.d.ts",
+      "default": "./dist/transactions.js"
+    },
+    "./execute": {
+      "types": "./dist/execute.d.ts",
+      "default": "./dist/execute.js"
+    },
+    "./view": {
+      "types": "./dist/view.d.ts",
+      "default": "./dist/view.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./extensions/profile": {
+      "types": "./dist/extensions/profile.d.ts",
+      "default": "./dist/extensions/profile.js"
+    },
+    "./extensions/media": {
+      "types": "./dist/extensions/media.d.ts",
+      "default": "./dist/extensions/media.js"
+    },
+    "./extensions/roles": {
+      "types": "./dist/extensions/roles.d.ts",
+      "default": "./dist/extensions/roles.js"
+    },
+    "./extensions/tags": {
+      "types": "./dist/extensions/tags.d.ts",
+      "default": "./dist/extensions/tags.js"
+    },
+    "./extensions/genres": {
+      "types": "./dist/extensions/genres.d.ts",
+      "default": "./dist/extensions/genres.js"
+    },
+    "./extensions/ctas": {
+      "types": "./dist/extensions/ctas.d.ts",
+      "default": "./dist/extensions/ctas.js"
+    },
+    "./extensions/links": {
+      "types": "./dist/extensions/links.d.ts",
+      "default": "./dist/extensions/links.js"
+    },
+    "./extensions/featured": {
+      "types": "./dist/extensions/featured.d.ts",
+      "default": "./dist/extensions/featured.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
+    "dist",
     "src",
     "README.md",
+    "LICENSE",
     "package.json"
   ],
   "devDependencies": {

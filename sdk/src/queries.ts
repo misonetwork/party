@@ -46,6 +46,24 @@ export async function getPartyById(client: ClientWithCoreApi, partyId: string): 
   return mapParty(partyId, PartyBcs.parse(content));
 }
 
+/** Fetches and parses multiple shared `Party` objects in one Core request. */
+export async function getPartiesByIds(
+  client: ClientWithCoreApi,
+  partyIds: readonly string[],
+): Promise<Partial<Record<string, Party>>> {
+  if (partyIds.length === 0) return {};
+  const { objects } = await client.core.getObjects({
+    objectIds: [...new Set(partyIds)],
+    include: { content: true },
+  });
+  const parties: Partial<Record<string, Party>> = {};
+  for (const obj of objects) {
+    if (obj instanceof Error) continue;
+    parties[obj.objectId] = mapParty(obj.objectId, PartyBcs.parse(obj.content));
+  }
+  return parties;
+}
+
 /** Derives a party's `PartyAdminCap` id (it is a `derived_object` off the party UID). */
 export function derivePartyAdminCapId(partyId: string, partyPackageId: string): string {
   return deriveObjectID(
