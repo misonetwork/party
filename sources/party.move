@@ -64,6 +64,14 @@ public struct PendingInviteKey(
     ID,
 ) has copy, drop, store;
 
+/// Key for a group's pending invitation, stored on the invited MEMBER party's
+/// UID. Its presence is the member-facing inbox index: it lets a party discover
+/// every group that is awaiting its response without scanning all groups.
+public struct PendingMembershipKey(
+    /// ID of the inviting group party.
+    ID,
+) has copy, drop, store;
+
 /// Key for a membership record, stored on the MEMBER party's UID — one per
 /// group the party belongs to. Only this module can construct it, so a
 /// membership record can never be forged by an extension holding `uid_mut`.
@@ -270,11 +278,15 @@ public fun set_name(self: &mut Party, cap: &PartyAdminCap, name: String) {
 }
 
 /// Invites an individual party to join a group. Requires the group's admin
-/// capability. Records a pending invite on the group; the invited party joins
-/// only by calling `accept_invite` with its own admin cap — so no party can be
-/// made a member without its consent. The party being invited must be an
-/// individual (not another group).
-public fun invite_party(group: &mut Party, group_cap: &PartyAdminCap, member: &Party) {
+/// capability. Records matching pending-invite indexes on both parties; the
+/// invited party joins only by calling `accept_invite` with its own admin cap —
+/// so no party can be made a member without its consent. The party being
+/// invited must be an individual (not another group).
+public fun invite_party(
+    group: &mut Party,
+    member: &mut Party,
+    group_cap: &PartyAdminCap,
+) {
     group.authorize(group_cap);
     group.assert_is_group_kind();
 
@@ -286,8 +298,10 @@ public fun invite_party(group: &mut Party, group_cap: &PartyAdminCap, member: &P
     assert!(!group.group_members().contains(&member_id), EDuplicateParty);
     assert!(group.group_members().length() < MAX_GROUP_MEMBERS, EMaxGroupMembersExceeded);
     assert!(!df::exists(&group.id, PendingInviteKey(member_id)), EAlreadyInvited);
+    assert!(!df::exists(&member.id, PendingMembershipKey(group_id)), EAlreadyInvited);
 
     df::add(&mut group.id, PendingInviteKey(member_id), true);
+    df::add(&mut member.id, PendingMembershipKey(group_id), true);
 
     emit(PartyInvitedEvent { group_id, member_id });
 }
@@ -309,7 +323,9 @@ public fun accept_invite(
     let member_id = member.id();
 
     assert!(df::exists(&group.id, PendingInviteKey(member_id)), ENoPendingInvite);
+    assert!(df::exists(&member.id, PendingMembershipKey(group_id)), ENoPendingInvite);
     let _: bool = df::remove(&mut group.id, PendingInviteKey(member_id));
+    let _: bool = df::remove(&mut member.id, PendingMembershipKey(group_id));
 
     match (&mut group.kind) {
         PartyKind::Group(members) => {
@@ -325,21 +341,39 @@ public fun accept_invite(
 }
 
 /// Declines a pending invite, authorized by the invited party's own admin cap.
-public fun decline_invite(group: &mut Party, member_cap: &PartyAdminCap) {
-    let member_id = member_cap.party_id;
+/// Clears the group-side invitation and the member-facing inbox entry together.
+public fun decline_invite(
+    group: &mut Party,
+    member: &mut Party,
+    member_cap: &PartyAdminCap,
+) {
+    member.authorize(member_cap);
+    let group_id = group.id();
+    let member_id = member.id();
     assert!(df::exists(&group.id, PendingInviteKey(member_id)), ENoPendingInvite);
+    assert!(df::exists(&member.id, PendingMembershipKey(group_id)), ENoPendingInvite);
     let _: bool = df::remove(&mut group.id, PendingInviteKey(member_id));
+    let _: bool = df::remove(&mut member.id, PendingMembershipKey(group_id));
 
-    emit(PartyInviteDeclinedEvent { group_id: group.id(), member_id });
+    emit(PartyInviteDeclinedEvent { group_id, member_id });
 }
 
-/// Revokes a pending invite, authorized by the group's admin cap.
-public fun revoke_invite(group: &mut Party, group_cap: &PartyAdminCap, member_id: ID) {
+/// Revokes a pending invite, authorized by the group's admin cap. Clears the
+/// group-side invitation and the member-facing inbox entry together.
+public fun revoke_invite(
+    group: &mut Party,
+    member: &mut Party,
+    group_cap: &PartyAdminCap,
+) {
     group.authorize(group_cap);
+    let group_id = group.id();
+    let member_id = member.id();
     assert!(df::exists(&group.id, PendingInviteKey(member_id)), ENoPendingInvite);
+    assert!(df::exists(&member.id, PendingMembershipKey(group_id)), ENoPendingInvite);
     let _: bool = df::remove(&mut group.id, PendingInviteKey(member_id));
+    let _: bool = df::remove(&mut member.id, PendingMembershipKey(group_id));
 
-    emit(PartyInviteRevokedEvent { group_id: group.id(), member_id });
+    emit(PartyInviteRevokedEvent { group_id, member_id });
 }
 
 /// Removes the caller's party from a group, authorized by the *member's* own
@@ -451,6 +485,13 @@ public fun is_member(member: &Party, group_id: ID): bool {
 /// Whether the group has a pending invite outstanding for `member_id`.
 public fun has_pending_invite(group: &Party, member_id: ID): bool {
     df::exists(&group.id, PendingInviteKey(member_id))
+}
+
+/// Whether an individual party has a pending membership invitation from a group.
+/// Reads the member-facing invitation index, so callers can discover invitations
+/// by enumerating only the member party's dynamic fields.
+public fun has_pending_membership(member: &Party, group_id: ID): bool {
+    df::exists(&member.id, PendingMembershipKey(group_id))
 }
 
 /// Returns the human-readable name of the party kind.

@@ -56,7 +56,7 @@ export function inviteParty(params: InvitePartyParams): TxThunk {
   return (tx) => {
     tx.add(party.inviteParty({
       package: params.partyPackageId,
-      arguments: [params.groupId, params.groupCapId, params.memberId],
+      arguments: [params.groupId, params.memberId, params.groupCapId],
     }));
   };
 }
@@ -81,6 +81,8 @@ export function acceptInvite(params: AcceptInviteParams): TxThunk {
 
 export interface DeclineInviteParams {
   groupId: string;
+  /** The invited individual party (shared object id). */
+  memberId: string;
   memberCapId: string;
   partyPackageId: string;
 }
@@ -90,15 +92,16 @@ export function declineInvite(params: DeclineInviteParams): TxThunk {
   return (tx) => {
     tx.add(party.declineInvite({
       package: params.partyPackageId,
-      arguments: [params.groupId, params.memberCapId],
+      arguments: [params.groupId, params.memberId, params.memberCapId],
     }));
   };
 }
 
 export interface RevokeInviteParams {
   groupId: string;
-  groupCapId: string;
+  /** The invited individual party (shared object id). */
   memberId: string;
+  groupCapId: string;
   partyPackageId: string;
 }
 
@@ -107,7 +110,7 @@ export function revokeInvite(params: RevokeInviteParams): TxThunk {
   return (tx) => {
     tx.add(party.revokeInvite({
       package: params.partyPackageId,
-      arguments: [params.groupId, params.groupCapId, params.memberId],
+      arguments: [params.groupId, params.memberId, params.groupCapId],
     }));
   };
 }

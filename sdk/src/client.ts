@@ -177,6 +177,10 @@ export class PartyClient {
   async getPendingInvites(groupId: string): Promise<string[]> {
     return queries.getPendingInvites(this.#client, groupId);
   }
+  /** Group ids that have invited this party but are awaiting its response. */
+  async getPendingMemberships(partyId: string): Promise<string[]> {
+    return queries.getPendingMemberships(this.#client, partyId);
+  }
   /** Whether a party is a member of a group. */
   async isMember(memberId: string, groupId: string): Promise<boolean> {
     return queries.isMember(this.#client, memberId, groupId, this.#pkg);

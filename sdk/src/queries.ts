@@ -8,7 +8,12 @@ import type { ClientWithCoreApi } from "@mysten/sui/client";
 import { deriveDynamicFieldID, deriveObjectID } from "@mysten/sui/utils";
 import { bcs } from "@mysten/sui/bcs";
 import { fromBase64 } from "@mysten/sui/utils";
-import { Party as PartyBcs, MembershipKey as MembershipKeyBcs, PendingInviteKey as PendingInviteKeyBcs } from "./contracts/miso_party/party.ts";
+import {
+  MembershipKey as MembershipKeyBcs,
+  Party as PartyBcs,
+  PendingInviteKey as PendingInviteKeyBcs,
+  PendingMembershipKey as PendingMembershipKeyBcs,
+} from "./contracts/miso_party/party.ts";
 import { Profile as ProfileBcs, ProfileKey as ProfileKeyBcs } from "./contracts/party_profile/party_profile.ts";
 import { Media as MediaBcs, MediaKey as MediaKeyBcs } from "./contracts/party_media/party_media.ts";
 import { PartyRoles as PartyRolesBcs, RolesKey as RolesKeyBcs } from "./contracts/party_roles/party_roles.ts";
@@ -276,6 +281,31 @@ export async function getPendingInvites(client: ClientWithCoreApi, groupId: stri
     cursor = page.hasNextPage ? page.cursor : null;
   } while (cursor);
   return members;
+}
+
+/**
+ * The group ids that have invited a party but are still awaiting its response.
+ * This reads the member-side `PendingMembershipKey` inbox index, so it only
+ * enumerates the target party's dynamic fields.
+ */
+export async function getPendingMemberships(client: ClientWithCoreApi, partyId: string): Promise<string[]> {
+  const groups: string[] = [];
+  let cursor: string | null | undefined;
+  do {
+    const page = await client.core.listDynamicFields({ parentId: partyId, cursor: cursor ?? undefined });
+    for (const f of page.dynamicFields) {
+      if (
+        typeof f.name?.type === "string" &&
+        f.name.type.endsWith("::party::PendingMembershipKey") &&
+        f.name.bcs != null
+      ) {
+        const [groupId] = PendingMembershipKeyBcs.parse(keyBytes(f.name.bcs));
+        groups.push(String(groupId));
+      }
+    }
+    cursor = page.hasNextPage ? page.cursor : null;
+  } while (cursor);
+  return groups;
 }
 
 /** Whether `memberId` currently holds a membership record for `groupId`. */

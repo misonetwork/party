@@ -87,7 +87,7 @@ fun member_joins_and_leaves_shared_group() {
     scenario.next_tx(OWNER);
     let mut group = scenario.take_shared_by_id<Party>(group_id);
     let mut member = scenario.take_shared_by_id<Party>(member_id);
-    group.invite_party(&group_cap, &member);
+    group.invite_party(&mut member, &group_cap);
     group.accept_invite(&mut member, &member_cap, scenario.ctx());
     assert_eq!(group.group_members().length(), 1);
     assert!(member.is_member(group_id));

@@ -48,6 +48,7 @@ export const PartyAdminCap = new MoveStruct({ name: `${$moduleName}::PartyAdminC
     } });
 export const PartyAdminCapKey = new MoveTuple({ name: `${$moduleName}::PartyAdminCapKey`, fields: [bcs.Address] });
 export const PendingInviteKey = new MoveTuple({ name: `${$moduleName}::PendingInviteKey`, fields: [bcs.Address] });
+export const PendingMembershipKey = new MoveTuple({ name: `${$moduleName}::PendingMembershipKey`, fields: [bcs.Address] });
 export const MembershipKey = new MoveTuple({ name: `${$moduleName}::MembershipKey`, fields: [bcs.Address] });
 export const Membership = new MoveStruct({ name: `${$moduleName}::Membership`, fields: {
         /** Epoch in which the party joined the group. */
@@ -196,23 +197,23 @@ export function setName(options: SetNameOptions) {
 }
 export interface InvitePartyArguments {
     group: RawTransactionArgument<string>;
-    groupCap: RawTransactionArgument<string>;
     member: RawTransactionArgument<string>;
+    groupCap: RawTransactionArgument<string>;
 }
 export interface InvitePartyOptions {
     package?: string;
     arguments: InvitePartyArguments | [
         group: RawTransactionArgument<string>,
-        groupCap: RawTransactionArgument<string>,
-        member: RawTransactionArgument<string>
+        member: RawTransactionArgument<string>,
+        groupCap: RawTransactionArgument<string>
     ];
 }
 /**
  * Invites an individual party to join a group. Requires the group's admin
- * capability. Records a pending invite on the group; the invited party joins only
- * by calling `accept_invite` with its own admin cap — so no party can be made a
- * member without its consent. The party being invited must be an individual (not
- * another group).
+ * capability. Records matching pending-invite indexes on both parties; the invited
+ * party joins only by calling `accept_invite` with its own admin cap — so no party
+ * can be made a member without its consent. The party being invited must be an
+ * individual (not another group).
  */
 export function inviteParty(options: InvitePartyOptions) {
     const packageAddress = options.package ?? '@local-pkg/miso_party';
@@ -221,7 +222,7 @@ export function inviteParty(options: InvitePartyOptions) {
         null,
         null
     ] satisfies (string | null)[];
-    const parameterNames = ["group", "groupCap", "member"];
+    const parameterNames = ["group", "member", "groupCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'party',
@@ -265,23 +266,29 @@ export function acceptInvite(options: AcceptInviteOptions) {
 }
 export interface DeclineInviteArguments {
     group: RawTransactionArgument<string>;
+    member: RawTransactionArgument<string>;
     memberCap: RawTransactionArgument<string>;
 }
 export interface DeclineInviteOptions {
     package?: string;
     arguments: DeclineInviteArguments | [
         group: RawTransactionArgument<string>,
+        member: RawTransactionArgument<string>,
         memberCap: RawTransactionArgument<string>
     ];
 }
-/** Declines a pending invite, authorized by the invited party's own admin cap. */
+/**
+ * Declines a pending invite, authorized by the invited party's own admin cap.
+ * Clears the group-side invitation and the member-facing inbox entry together.
+ */
 export function declineInvite(options: DeclineInviteOptions) {
     const packageAddress = options.package ?? '@local-pkg/miso_party';
     const argumentsTypes = [
         null,
+        null,
         null
     ] satisfies (string | null)[];
-    const parameterNames = ["group", "memberCap"];
+    const parameterNames = ["group", "member", "memberCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'party',
@@ -291,26 +298,29 @@ export function declineInvite(options: DeclineInviteOptions) {
 }
 export interface RevokeInviteArguments {
     group: RawTransactionArgument<string>;
+    member: RawTransactionArgument<string>;
     groupCap: RawTransactionArgument<string>;
-    memberId: RawTransactionArgument<string>;
 }
 export interface RevokeInviteOptions {
     package?: string;
     arguments: RevokeInviteArguments | [
         group: RawTransactionArgument<string>,
-        groupCap: RawTransactionArgument<string>,
-        memberId: RawTransactionArgument<string>
+        member: RawTransactionArgument<string>,
+        groupCap: RawTransactionArgument<string>
     ];
 }
-/** Revokes a pending invite, authorized by the group's admin cap. */
+/**
+ * Revokes a pending invite, authorized by the group's admin cap. Clears the
+ * group-side invitation and the member-facing inbox entry together.
+ */
 export function revokeInvite(options: RevokeInviteOptions) {
     const packageAddress = options.package ?? '@local-pkg/miso_party';
     const argumentsTypes = [
         null,
         null,
-        '0x2::object::ID'
+        null
     ] satisfies (string | null)[];
-    const parameterNames = ["group", "groupCap", "memberId"];
+    const parameterNames = ["group", "member", "groupCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'party',
@@ -605,6 +615,36 @@ export function hasPendingInvite(options: HasPendingInviteOptions) {
         package: packageAddress,
         module: 'party',
         function: 'has_pending_invite',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface HasPendingMembershipArguments {
+    member: RawTransactionArgument<string>;
+    groupId: RawTransactionArgument<string>;
+}
+export interface HasPendingMembershipOptions {
+    package?: string;
+    arguments: HasPendingMembershipArguments | [
+        member: RawTransactionArgument<string>,
+        groupId: RawTransactionArgument<string>
+    ];
+}
+/**
+ * Whether an individual party has a pending membership invitation from a group.
+ * Reads the member-facing invitation index, so callers can discover invitations by
+ * enumerating only the member party's dynamic fields.
+ */
+export function hasPendingMembership(options: HasPendingMembershipOptions) {
+    const packageAddress = options.package ?? '@local-pkg/miso_party';
+    const argumentsTypes = [
+        null,
+        '0x2::object::ID'
+    ] satisfies (string | null)[];
+    const parameterNames = ["member", "groupId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'party',
+        function: 'has_pending_membership',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
     });
 }
