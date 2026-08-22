@@ -239,7 +239,7 @@ public fun new(
         created_at_ms,
     };
 
-    let party_id = party.id();
+    let party_id = object::id(&party);
 
     let party_admin_cap = PartyAdminCap {
         id: claim(&mut party.id, PartyAdminCapKey(party_id)),
@@ -247,7 +247,7 @@ public fun new(
     };
 
     emit(PartyCreatedEvent {
-        party_id: party.id(),
+        party_id: object::id(&party),
         name,
         kind: party.kind.name(),
         created_at_ms,
@@ -272,7 +272,7 @@ public fun set_name(self: &mut Party, cap: &PartyAdminCap, name: String) {
     self.name = name;
 
     emit(PartyNameSetEvent {
-        party_id: self.id(),
+        party_id: object::id(self),
         name,
     });
 }
@@ -290,8 +290,8 @@ public fun invite_party(
     group.authorize(group_cap);
     group.assert_is_group_kind();
 
-    let group_id = group.id();
-    let member_id = member.id();
+    let group_id = object::id(group);
+    let member_id = object::id(member);
 
     assert!(member_id != group_id, ECantAddSelfAsMember);
     member.assert_is_individual_kind();
@@ -319,8 +319,8 @@ public fun accept_invite(
     member.authorize(member_cap);
     group.assert_is_group_kind();
 
-    let group_id = group.id();
-    let member_id = member.id();
+    let group_id = object::id(group);
+    let member_id = object::id(member);
 
     assert!(df::exists(&group.id, PendingInviteKey(member_id)), ENoPendingInvite);
     assert!(df::exists(&member.id, PendingMembershipKey(group_id)), ENoPendingInvite);
@@ -348,8 +348,8 @@ public fun decline_invite(
     member_cap: &PartyAdminCap,
 ) {
     member.authorize(member_cap);
-    let group_id = group.id();
-    let member_id = member.id();
+    let group_id = object::id(group);
+    let member_id = object::id(member);
     assert!(df::exists(&group.id, PendingInviteKey(member_id)), ENoPendingInvite);
     assert!(df::exists(&member.id, PendingMembershipKey(group_id)), ENoPendingInvite);
     let _: bool = df::remove(&mut group.id, PendingInviteKey(member_id));
@@ -366,8 +366,8 @@ public fun revoke_invite(
     group_cap: &PartyAdminCap,
 ) {
     group.authorize(group_cap);
-    let group_id = group.id();
-    let member_id = member.id();
+    let group_id = object::id(group);
+    let member_id = object::id(member);
     assert!(df::exists(&group.id, PendingInviteKey(member_id)), ENoPendingInvite);
     assert!(df::exists(&member.id, PendingMembershipKey(group_id)), ENoPendingInvite);
     let _: bool = df::remove(&mut group.id, PendingInviteKey(member_id));
@@ -381,8 +381,8 @@ public fun revoke_invite(
 /// member set and the member's own membership record.
 public fun leave(group: &mut Party, member: &mut Party, member_cap: &PartyAdminCap) {
     member.authorize(member_cap);
-    let member_id = member.id();
-    let group_id = group.id();
+    let member_id = object::id(member);
+    let group_id = object::id(group);
 
     remove_membership(group, member);
 
@@ -396,8 +396,8 @@ public fun leave(group: &mut Party, member: &mut Party, member_cap: &PartyAdminC
 /// "cancel my group's membership" and nothing else on the member is touchable.
 public fun remove_member(group: &mut Party, group_cap: &PartyAdminCap, member: &mut Party) {
     group.authorize(group_cap);
-    let member_id = member.id();
-    let group_id = group.id();
+    let member_id = object::id(member);
+    let group_id = object::id(group);
 
     remove_membership(group, member);
 
@@ -407,8 +407,8 @@ public fun remove_member(group: &mut Party, group_cap: &PartyAdminCap, member: &
 /// Removes a membership from both sides: the group's member set and the
 /// member's `MembershipKey` record. Aborts if the party is not a member.
 fun remove_membership(group: &mut Party, member: &mut Party) {
-    let group_id = group.id();
-    let member_id = member.id();
+    let group_id = object::id(group);
+    let member_id = object::id(member);
 
     match (&mut group.kind) {
         PartyKind::Group(members) => {
@@ -434,11 +434,6 @@ public fun new_group_kind(): PartyKind {
 }
 
 // === Public View Functions ===
-
-/// Returns the ID of this party.
-public fun id(self: &Party): ID {
-    self.id.to_inner()
-}
 
 /// Returns the human-readable name of this party.
 public fun name(self: &Party): String {
@@ -504,7 +499,7 @@ public fun party_kind_name(self: &PartyKind): String {
 
 /// Verifies that the admin capability matches this party.
 public fun authorize(self: &Party, cap: &PartyAdminCap) {
-    assert!(cap.party_id == self.id(), EUnauthorized);
+    assert!(cap.party_id == object::id(self), EUnauthorized);
 }
 
 /// Returns the ID of the party associated with the admin capability.
@@ -560,7 +555,7 @@ public fun new_group_with_n_members_for_testing(
         created_at_ms: 0,
     };
 
-    let party_id = party.id();
+    let party_id = object::id(&party);
 
     let party_admin_cap = PartyAdminCap {
         id: claim(&mut party.id, PartyAdminCapKey(party_id)),

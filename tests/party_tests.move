@@ -77,15 +77,15 @@ fun test_join_group() {
     let (mut group, group_cap) = test_helpers::group(ctx);
     let (mut individual, individual_cap) = test_helpers::individual(ctx);
 
-    let party_id = individual.id();
+    let party_id = object::id(&individual);
     join(&mut group, &group_cap, &mut individual, &individual_cap, ctx);
 
     // Both sides recorded: the group's set and the member's own membership df.
     assert_eq!(group.group_members().length(), 1);
     assert!(group.group_members().contains(&party_id));
-    assert!(party::is_member(&individual, group.id()));
+    assert!(party::is_member(&individual, object::id(&group)));
     assert!(!group.has_pending_invite(party_id)); // invite consumed
-    assert!(!party::has_pending_membership(&individual, group.id())); // inbox entry consumed
+    assert!(!party::has_pending_membership(&individual, object::id(&group))); // inbox entry consumed
     assert_eq!(sui::event::events_by_type<party::PartyJoinedGroupEvent>().length(), 1);
 
     destroy(group);
@@ -125,12 +125,12 @@ fun test_decline_invite() {
     let (mut member, member_cap) = test_helpers::individual(ctx);
 
     group.invite_party(&mut member, &group_cap);
-    assert!(group.has_pending_invite(member.id()));
-    assert!(party::has_pending_membership(&member, group.id()));
+    assert!(group.has_pending_invite(object::id(&member)));
+    assert!(party::has_pending_membership(&member, object::id(&group)));
 
     group.decline_invite(&mut member, &member_cap);
-    assert!(!group.has_pending_invite(member.id()));
-    assert!(!party::has_pending_membership(&member, group.id()));
+    assert!(!group.has_pending_invite(object::id(&member)));
+    assert!(!party::has_pending_membership(&member, object::id(&group)));
     assert_eq!(group.group_members().length(), 0);
 
     destroy(group);
@@ -145,14 +145,14 @@ fun test_revoke_invite() {
     let (mut group, group_cap) = test_helpers::group(ctx);
     let (mut member, member_cap) = test_helpers::individual(ctx);
 
-    let member_id = member.id();
+    let member_id = object::id(&member);
     group.invite_party(&mut member, &group_cap);
     assert!(group.has_pending_invite(member_id));
-    assert!(party::has_pending_membership(&member, group.id()));
+    assert!(party::has_pending_membership(&member, object::id(&group)));
 
     group.revoke_invite(&mut member, &group_cap);
     assert!(!group.has_pending_invite(member_id));
-    assert!(!party::has_pending_membership(&member, group.id()));
+    assert!(!party::has_pending_membership(&member, object::id(&group)));
 
     destroy(group);
     destroy(group_cap);
@@ -206,7 +206,7 @@ fun test_remove_member() {
     // Admin evict — scrubs both the set and the member's own record, no member cap.
     group.remove_member(&group_cap, &mut individual);
     assert_eq!(group.group_members().length(), 0);
-    assert!(!party::is_member(&individual, group.id()));
+    assert!(!party::is_member(&individual, object::id(&group)));
 
     destroy(group);
     destroy(group_cap);
@@ -412,7 +412,7 @@ fun test_leave_group() {
     // The member's own cap authorizes the exit — no group admin involved.
     group.leave(&mut member, &member_cap);
     assert_eq!(group.group_members().length(), 0);
-    assert!(!party::is_member(&member, group.id()));
+    assert!(!party::is_member(&member, object::id(&group)));
     assert_eq!(sui::event::events_by_type<party::PartyLeftGroupEvent>().length(), 1);
     assert_eq!(sui::event::events_by_type<party::PartyRemovedFromGroupEvent>().length(), 0);
 

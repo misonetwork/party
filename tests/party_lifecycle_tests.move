@@ -23,7 +23,7 @@ const ENotGroupKind: u64 = 11;
 fun share_makes_party_publicly_readable() {
     let mut scenario = test_scenario::begin(OWNER);
     let (p, cap) = test_helpers::individual(scenario.ctx());
-    assert_eq!(cap.party_id(), p.id());
+    assert_eq!(cap.party_id(), object::id(&p));
     p.share(&cap);
 
     scenario.next_tx(READER);
@@ -78,8 +78,8 @@ fun member_joins_and_leaves_shared_group() {
     let mut scenario = test_scenario::begin(OWNER);
     let (group, group_cap) = test_helpers::group(scenario.ctx());
     let (member, member_cap) = test_helpers::individual(scenario.ctx());
-    let group_id = group.id();
-    let member_id = member.id();
+    let group_id = object::id(&group);
+    let member_id = object::id(&member);
     group.share(&group_cap);
     member.share(&member_cap);
 
