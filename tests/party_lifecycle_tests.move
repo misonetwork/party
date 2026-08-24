@@ -63,7 +63,7 @@ fun uid_mut_attaches_dynamic_fields_on_shared_party() {
     scenario.next_tx(OWNER);
     let mut p = scenario.take_shared<Party>();
     dynamic_field::add(p.uid_mut(&cap), b"profile", 42u64);
-    assert!(dynamic_field::exists_(p.uid(), b"profile"));
+    assert!(dynamic_field::exists(p.uid(), b"profile"));
     assert_eq!(*dynamic_field::borrow<vector<u8>, u64>(p.uid(), b"profile"), 42);
     test_scenario::return_shared(p);
 
