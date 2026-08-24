@@ -46,12 +46,18 @@ extension writes, eviction/exit asymmetries, object bloat DoS.
   Corollary dust economics: the storage rebate on removal goes to the
   *remover's* transaction, so a declining member receives a rebate the
   inviter paid. Sub-dust amounts; not actionable.
+  **Disposition (2026-08-24):** accepted-by-design — the marker write is
+  removable by the member at will and bounded by inviter gas; the rebate
+  asymmetry is sub-dust.
 - **F2 (Informational): pending invites are unbounded.** `MAX_GROUP_MEMBERS`
   (200) caps *members* (checked at invite, `party.move:299`, and again at
   accept, `party.move:332`) but not pending invitations. A group admin can
   invite arbitrarily many parties, growing both objects' dynamic-field stores
   at the inviter's expense. No funds are locked, no victim pays storage, and
   invites are individually removable. Accepted-as-designed spam surface.
+  **Disposition (2026-08-24):** accepted-by-design — pending invites cost only
+  the inviter, lock no funds, are individually removable, and member capacity
+  is enforced again at accept.
 - **F3 (Informational): membership keys are unforgeable — verified.**
   `MembershipKey`, `PendingInviteKey`, `PendingMembershipKey` are `public
   struct`s with private fields (`party.move:62-81`), so only this module can
@@ -61,6 +67,9 @@ extension writes, eviction/exit asymmetries, object bloat DoS.
   whole extension ecosystem. `is_member` (`party.move:476-478`) reads the
   member-side record and is the extensions' member-gated authorization
   primitive; it cannot be spoofed.
+  **Disposition (2026-08-24):** accepted-by-design — verified property, not a
+  defect: module-private key construction makes membership and invite state
+  unforgeable by any extension, the intended isolation boundary.
 
 No other findings. Specifically checked and cleared:
 
